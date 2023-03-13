@@ -1,0 +1,102 @@
+:root {
+  --primary-color: rgb(8, 118, 155);
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", "Roboto", "Ubuntu",
+    "Cantarell", "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emojif";
+  min-width: fit-content;
+}
+article {
+  /* Add shadows to create the "card" effect */
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+  transition: 0.3s;
+  margin: 0.2rem;
+  width: 100%;
+  border-radius: 0.5rem;
+}
+
+/* On mouse-over, add a deeper shadow */
+.nodeCard:hover {
+  box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+}
+
+#tree-container {
+  position: relative;
+}
+
+/* Add some padding inside the card container */
+.nodeContainer {
+  display: flex;
+  align-items: center;
+  padding: 2px 16px;
+  /* border-style: solid; */
+  border-color: black;
+  /* border-width: 2; */
+}
+
+article > header {
+  display: flex;
+  flex-grow: 1;
+  justify-content: space-between;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 0.5rem 0.5rem 0rem 0rem;
+  padding: 0rem 0.5rem 0rem 0.5rem;
+}
+
+.nodeName {
+  font-weight: bold;
+}
+
+.nodeValue,
+.nodeInput {
+  display: flex;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: rgb(115, 130, 140);
+  padding: 0.2rem;
+}
+
+.nodeInput {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+input,
+select {
+  text-align: center;
+  --background-color: var(--form-element-background-color);
+  --border-color: var(--form-element-border-color);
+  --color: var(--form-element-color);
+  --box-shadow: none;
+  border: var(--border-width) solid var(--border-color);
+  border-radius: var(--border-radius);
+  outline: 0;
+  background-color: var(--background-color);
+  box-shadow: var(--box-shadow);
+  color: var(--color);
+  font-weight: var(--font-weight);
+  transition: background-color var(--transition), border-color var(--transition),
+    color var(--transition), box-shadow var(--transition);
+}
+
+input,
+optgroup,
+select,
+textarea {
+  margin: 0;
+  margin-bottom: 0px;
+  font-size: 1.2rem;
+  font-family: inherit;
+  letter-spacing: inherit;
+}
+
+.editor {
+  margin: 2rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 0.5rem;
+  width: 80%;
+  font-size: 1rem;
+  font-family: "Courier New", Courier, monospace;
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, height=device-height, initial-scale=1.0, minimum-scale=1.0"
+    />
+    <title></title>
+  </head>
+  <body>
+    <header>
+      <h1>Value driver tree demo</h1>
+      <nav>
+        <button id="btnEdit">Edit</button>
+        <button id="btnTree">Tree</button>
+      </nav>
+    </header>
+    <div id="editor-container" style="display: none">
+      <div class="editor" contenteditable="true" id="editTextArea">Hello</div>
+      <button id="btnUpdate">Update</button>
+    </div>
+    <div id="tree-container"></div>
+    <div id="list-container"></div>
+    <script type="module">
+      import { nodeToText, updateView } from "/src/nodes.ts";
+      import { ParseVDT, sampleTreeComplex } from "/src/parser.ts";
+      const editContainer = document.getElementById("editor-container");
+      const treeContainer = document.getElementById("tree-container");
+      const editTextArea = document.getElementById("editTextArea");
+      const btnEdit = document.getElementById("btnEdit");
+      const btnTree = document.getElementById("btnTree");
+      const btnUpdate = document.getElementById("btnUpdate");
+      const parsed = ParseVDT(sampleTreeComplex);
+      editTextArea.innerText = nodeToText(parsed);
+
+      function showEditor() {
+        editContainer.style.display = "block";
+        treeContainer.style.display = "none";
+      }
+      function showTree() {
+        editContainer.style.display = "none";
+        treeContainer.style.display = "grid";
+      }
+      function updateTree() {
+        const newTree = ParseVDT(editTextArea.innerText);
+        updateView(newTree);
+      }
+      btnEdit.addEventListener("click", showEditor);
+      btnTree.addEventListener("click", showTree);
+      btnUpdate.addEventListener("click", updateTree);
+      updateView(parsed);
+    </script>
+  </body>
+</html>
