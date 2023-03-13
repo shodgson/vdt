@@ -488,6 +488,7 @@ export function nodeToText(node: VDTNode) {
 // DONE: create form (text view, but reverse)
 // DONE: refactor: operators to proper class
 // DONE: text view
+// TODO: show error messages
 // TODO: vertical view
 // TODO: collaps/expand
 // TODO: non-range inputs (e.g. radio box)
