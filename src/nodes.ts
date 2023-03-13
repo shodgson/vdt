@@ -309,7 +309,8 @@ export function updateView(node: CalculationNode | undefined) {
 
 function renderConnections(connections: NodeConnection[]) {
   //Connect nodes
-  connections.forEach((c) => connectNodes(c.start, c.end, c.operator));
+  //connections.forEach((c) => connectNodes(c.start, c.end, c.operator));
+  connections.forEach((c) => connectNodes(c.start, c.end));
 }
 
 function renderNode(
@@ -420,8 +421,8 @@ function renderNode(
 
 function connectNodes(
   nodeCard: HTMLElement,
-  childNode: HTMLElement,
-  operator: string | null | undefined
+  childNode: HTMLElement
+  //operator: string | null | undefined
 ) {
   /*console.log(
     "Connect ",
