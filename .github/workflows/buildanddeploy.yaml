@@ -28,8 +28,6 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
-        with:
-          node-version: "16.x"
 
       - name: Install dependencies
         run: npm install
