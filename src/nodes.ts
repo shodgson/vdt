@@ -125,6 +125,10 @@ export class VDTNode {
     return document.createElement("div");
   }
 
+  controlToDOM(_node: VDTNode, _dom: HTMLElement): HTMLElement | null {
+    return null;
+  }
+
   toText(): string {
     return "";
   }
@@ -134,6 +138,32 @@ export class VDTNode {
       return "";
     }
     return `[${this.name}] = ${this.unit}\n`;
+  }
+
+  lineDOM(
+    indentLevel: number,
+    rootNode: VDTNode,
+    container: HTMLElement
+  ): HTMLElement {
+    const el = document.createElement("div");
+    const controlElement = this.controlToDOM(rootNode, container);
+    el.classList.add("node-line");
+    el.innerHTML = `
+    <div class="node-line-label">${"&nbsp;".repeat(6 * indentLevel)}
+    ${getOperator(this.operator).label} 
+    ${this.name}
+    </div>`;
+    const lineValue = document.createElement("div");
+    lineValue.classList.add("node-line-value");
+    if (this.valueToDOM()?.innerText != "") {
+      lineValue.appendChild(this.valueToDOM());
+    }
+    const unit = document.createElement("div");
+    unit.classList.add("node-line-unit");
+    unit.innerText = this.unit;
+    lineValue.appendChild(unit);
+    el.appendChild(lineValue);
+    return el;
   }
 
   // calculateValue will set the value for the selected and all child nodes
@@ -244,12 +274,28 @@ export class InputNode extends VDTNode {
   }
   valueToDOM(): HTMLElement {
     const div = document.createElement("div");
+    return div;
+  }
+
+  controlToDOM(node: VDTNode, dom: HTMLElement): HTMLElement {
+    const controlEl = document.createElement("div");
+    const inputDongle = this.input.toDOM();
+    const onInputChange = () => {
+      const newValue = parseFloat(inputDongle.value);
+      this.input.value = newValue;
+      updateView();
+    };
+    inputDongle.onchange = onInputChange;
+    const div = document.createElement("div");
+    controlEl.appendChild(inputDongle);
     if (this.input.isRange()) {
       div.classList.add("nodeInput");
       div.innerHTML = this.getValue().toLocaleString();
+      controlEl.appendChild(div);
     }
-    return div;
+    return controlEl;
   }
+
   toText(): string {
     return `${this.name} = ${this.input.toText()}`;
   }
@@ -280,8 +326,6 @@ export class StaticNode extends VDTNode {
   }
 }
 
-const container = document.getElementById("tree-container");
-
 const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 svg.style.position = "absolute";
 svg.style.top = "0";
@@ -290,32 +334,74 @@ svg.style.width = "100%";
 svg.style.height = "100%";
 svg.style.zIndex = "-100";
 
-export function updateView(node: CalculationNode | undefined) {
-  if (node && container != null) {
-    container.innerHTML = "";
-    svg.innerHTML = "";
-    container.style.display = "grid";
-    //console.debug(`Number of leaf nodes: ${node.countLeafNodes()}`);
-    container.style.gridTemplateRows = `repeat(${node.countLeafNodes()})`;
-    container.style.gridTemplateColumns = `repeat(${node.getMaxDepth()})`;
-    const nodes = renderNode(node.calculateValue(), node);
-    renderConnections(nodes.nodeConnections);
+// Globals.. TODO: refactor in a view class or something
+let treeContainer: HTMLElement = document.createElement("div");
+let listContainer: HTMLElement = document.createElement("div");
+let rootNode = new VDTNode("Initialising");
+
+export function updateView() {
+  updateTree(rootNode, treeContainer);
+  updateList(rootNode, listContainer);
+}
+
+export function updateTree(node: VDTNode, parentDOM: HTMLElement) {
+  treeContainer = parentDOM;
+  rootNode = node;
+
+  parentDOM.innerHTML = "";
+  svg.innerHTML = "";
+  //parentDOM.style.display = "grid";
+  //console.debug(`Number of leaf nodes: ${node.countLeafNodes()}`);
+  if (node instanceof CalculationNode) {
+    parentDOM.style.gridTemplateRows = `repeat(${node.countLeafNodes()})`;
+    parentDOM.style.gridTemplateColumns = `repeat(${node.getMaxDepth()})`;
+    const nodes = renderNodeAsTree(node.calculateValue(), node, parentDOM);
+    renderConnections(nodes.nodeConnections, parentDOM);
     new ResizeObserver(function redrawConnections() {
       svg.innerHTML = "";
-      renderConnections(nodes.nodeConnections);
-    }).observe(container);
+      renderConnections(nodes.nodeConnections, parentDOM);
+    }).observe(parentDOM);
   }
 }
 
-function renderConnections(connections: NodeConnection[]) {
-  //Connect nodes
-  //connections.forEach((c) => connectNodes(c.start, c.end, c.operator));
-  connections.forEach((c) => connectNodes(c.start, c.end));
+export function updateList(node: VDTNode, parentDOM: HTMLElement) {
+  listContainer = parentDOM;
+  rootNode = node;
+
+  parentDOM.innerHTML = "";
+  svg.innerHTML = "";
+  //parentDOM.style.display = "grid";
+  //console.debug(`Number of leaf nodes: ${node.countLeafNodes()}`);
+  if (node instanceof CalculationNode) {
+    parentDOM.style.gridTemplateRows = `repeat(${node.countLeafNodes()})`;
+    parentDOM.style.gridTemplateColumns = `repeat(${node.getMaxDepth()})`;
+    //const nodes = renderNodeAsTree(node.calculateValue(), node, parentDOM);
+    const nodes = renderNodeAsVertical(node.calculateValue(), parentDOM);
+  } else {
+    const nodes = renderNodeAsVertical(node, parentDOM);
+  }
+  /*
+  renderConnections(nodes.nodeConnections, parentDOM);
+  new ResizeObserver(function redrawConnections() {
+    svg.innerHTML = "";
+    renderConnections(nodes.nodeConnections, parentDOM);
+  }).observe(parentDOM);
+  */
 }
 
-function renderNode(
+function renderConnections(
+  connections: NodeConnection[],
+  parentDOM: HTMLElement
+) {
+  //Connect nodes
+  //connections.forEach((c) => connectNodes(c.start, c.end, c.operator));
+  connections.forEach((c) => connectNodes(c.start, c.end, parentDOM));
+}
+
+function renderNodeAsTree(
   node: VDTNode,
   rootNode: CalculationNode,
+  parentDOM: HTMLElement,
   level = 1,
   row = 1
 ) {
@@ -339,16 +425,17 @@ function renderNode(
   nodeCard.innerHTML = nodeContent;
   nodeCard.appendChild(node.valueToDOM());
   nodeCardContainer.appendChild(nodeCard);
-  container?.appendChild(nodeCardContainer);
+  parentDOM.appendChild(nodeCardContainer);
 
   if (node instanceof CalculationNode && node.children.length > 0) {
     let childLeaves = 0;
     //nodeContainer.appendChild(subNodeContainer);
     for (const child of node.children) {
       //console.log( `Rendering ${child.name} at (${childLeaves} + ${row},${level + 1})`);
-      const childNode = renderNode(
+      const childNode = renderNodeAsTree(
         child,
         rootNode,
+        parentDOM,
         level + 1,
         row + childLeaves
       );
@@ -381,17 +468,7 @@ function renderNode(
       inputWrapper.appendChild(input);
       */
 
-      const inputDongle = node.input.toDOM();
-      inputDongle.onchange = () => {
-        //input.value = slider.value;
-        const newValue = parseFloat(inputDongle.value);
-        if (node.input) {
-          node.input.value = newValue;
-          //node.calculateValue();
-          //this.render(this.rootNode);
-          updateView(rootNode);
-        }
-      };
+      const inputDongle = node.controlToDOM(rootNode, parentDOM);
       inputWrapper.appendChild(inputDongle);
     }
     numLeaves++;
@@ -416,12 +493,64 @@ function renderNode(
   return { nodeCard, numLeaves, nodeConnections };
 }
 
+function renderNodeAsVertical(
+  node: VDTNode,
+  container: HTMLElement,
+  indent: number = 0,
+  topNode: VDTNode = node
+) {
+  if (node instanceof CalculationNode) {
+    node.children.forEach((c) => {
+      renderNodeAsVertical(c, container, indent + 1, topNode);
+    });
+  }
+
+  // Label
+  const el = document.createElement("div");
+  el.classList.add("node-line-label");
+  el.innerHTML = `
+    ${"&nbsp;".repeat(6 * indent)}
+    ${getOperator(node.operator).label} 
+    ${node.name}
+    `;
+  container.appendChild(el);
+  // Control
+
+  const controlElement = node.controlToDOM(topNode, container);
+  if (controlElement) {
+    controlElement.classList.add("node-line-input");
+    container.appendChild(controlElement);
+  }
+
+  // Value
+  const lineValue = document.createElement("div");
+  lineValue.classList.add("node-line-value");
+  if (node.valueToDOM()?.innerText != "") {
+    lineValue.appendChild(node.valueToDOM());
+    container.appendChild(lineValue);
+  }
+
+  // Unit
+  const unit = document.createElement("div");
+  unit.classList.add("node-line-unit");
+  unit.innerText = node.unit;
+  container.appendChild(unit);
+  //const nodeLine = node.lineDOM(indent, topNode, container);
+  //container.prepend(nodeLine);
+
+  // Border
+  const border = document.createElement("div");
+  border.classList.add("node-line-border");
+  container.append(border);
+}
+
 // console.log("Depth:", getMaxDepth(profit));
 // console.log("Leaves:", countLeafNodes(profit));
 
 function connectNodes(
   nodeCard: HTMLElement,
-  childNode: HTMLElement
+  childNode: HTMLElement,
+  parentDOM: HTMLElement
   //operator: string | null | undefined
 ) {
   /*console.log(
@@ -466,9 +595,7 @@ function connectNodes(
   // Add the path to an SVG element and add the SVG element to the document
   svg.appendChild(path);
 
-  if (container != null) {
-    container.appendChild(svg);
-  }
+  parentDOM.appendChild(svg);
 
   //throw new Error("Function not implemented.");
 }
@@ -488,12 +615,13 @@ export function nodeToText(node: VDTNode) {
 // DONE: create form (text view, but reverse)
 // DONE: refactor: operators to proper class
 // DONE: text view
-// TODO: show error messages
-// TODO: vertical view
+// DONE: show error messages
+// DONE: vertical view
 // TODO: collaps/expand
 // TODO: non-range inputs (e.g. radio box)
 // TODO: refactor: separate nodes and the rendering. clean the latter up. toDOM() separately
 // TODO: use tempNodes in parser
+// TODO: accept decimal numbers
 
 /*
 Text parse

@@ -1,8 +1,8 @@
 import { updateView } from "./nodes";
 import { ParseVDT, sampleTreeComplex } from "./parser";
 
-export const parsed = ParseVDT(sampleTreeComplex);
-updateView(parsed);
+//export const parsed = ParseVDT(sampleTreeComplex);
+//updateView(parsed);
 /*
 const profit = new CalculationNode("Profit", "USD");
 

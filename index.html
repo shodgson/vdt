@@ -14,6 +14,7 @@
       <nav>
         <button id="btnEdit">Edit</button>
         <button id="btnTree">Tree</button>
+        <button id="btnList">List</button>
       </nav>
     </header>
     <div id="editor-container" style="display: none">
@@ -21,16 +22,18 @@
       <div class="error" id="error-message"></div>
       <button id="btnUpdate">Update</button>
     </div>
-    <div id="tree-container"></div>
-    <div id="list-container"></div>
+    <div id="tree-container" style="display: grid"></div>
+    <div id="list-container" style="display: none"></div>
     <script type="module">
-      import { nodeToText, updateView } from "/src/nodes.ts";
+      import { nodeToText, updateList, updateTree } from "/src/nodes.ts";
       import { ParseVDT, sampleTreeComplex } from "/src/parser.ts";
       const editContainer = document.getElementById("editor-container");
       const treeContainer = document.getElementById("tree-container");
+      const listContainer = document.getElementById("list-container");
       const editTextArea = document.getElementById("editTextArea");
       const btnEdit = document.getElementById("btnEdit");
       const btnTree = document.getElementById("btnTree");
+      const btnList = document.getElementById("btnList");
       const btnUpdate = document.getElementById("btnUpdate");
       const errorMessage = document.getElementById("error-message");
       const parsed = ParseVDT(sampleTreeComplex);
@@ -39,23 +42,33 @@
       function showEditor() {
         editContainer.style.display = "block";
         treeContainer.style.display = "none";
+        listContainer.style.display = "none";
       }
       function showTree() {
         editContainer.style.display = "none";
         treeContainer.style.display = "grid";
+        listContainer.style.display = "none";
       }
-      function updateTree() {
+      function showList() {
+        editContainer.style.display = "none";
+        treeContainer.style.display = "none";
+        listContainer.style.display = "grid";
+      }
+      function parseTree() {
         try {
           const newTree = ParseVDT(editTextArea.innerText);
-          updateView(newTree);
+          updateTree(newTree, treeContainer);
+          updateList(newTree, listContainer);
         } catch (error) {
           errorMessage.innerHTML = error;
         }
       }
       btnEdit.addEventListener("click", showEditor);
       btnTree.addEventListener("click", showTree);
-      btnUpdate.addEventListener("click", updateTree);
-      updateView(parsed);
+      btnList.addEventListener("click", showList);
+      btnUpdate.addEventListener("click", parseTree);
+      updateTree(parsed, treeContainer);
+      updateList(parsed, listContainer);
     </script>
   </body>
 </html>
