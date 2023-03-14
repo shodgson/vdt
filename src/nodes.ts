@@ -142,11 +142,11 @@ export class VDTNode {
 
   lineDOM(
     indentLevel: number,
-    rootNode: VDTNode,
-    container: HTMLElement
+    _rootNode: VDTNode,
+    _container: HTMLElement
   ): HTMLElement {
     const el = document.createElement("div");
-    const controlElement = this.controlToDOM(rootNode, container);
+    //const controlElement = this.controlToDOM(rootNode, container);
     el.classList.add("node-line");
     el.innerHTML = `
     <div class="node-line-label">${"&nbsp;".repeat(6 * indentLevel)}
@@ -277,7 +277,7 @@ export class InputNode extends VDTNode {
     return div;
   }
 
-  controlToDOM(node: VDTNode, dom: HTMLElement): HTMLElement {
+  controlToDOM(_node: VDTNode, _dom: HTMLElement): HTMLElement {
     const controlEl = document.createElement("div");
     const inputDongle = this.input.toDOM();
     const onInputChange = () => {
@@ -373,20 +373,10 @@ export function updateList(node: VDTNode, parentDOM: HTMLElement) {
   //parentDOM.style.display = "grid";
   //console.debug(`Number of leaf nodes: ${node.countLeafNodes()}`);
   if (node instanceof CalculationNode) {
-    parentDOM.style.gridTemplateRows = `repeat(${node.countLeafNodes()})`;
-    parentDOM.style.gridTemplateColumns = `repeat(${node.getMaxDepth()})`;
-    //const nodes = renderNodeAsTree(node.calculateValue(), node, parentDOM);
-    const nodes = renderNodeAsVertical(node.calculateValue(), parentDOM);
+    renderNodeAsVertical(node.calculateValue(), parentDOM);
   } else {
-    const nodes = renderNodeAsVertical(node, parentDOM);
+    renderNodeAsVertical(node, parentDOM);
   }
-  /*
-  renderConnections(nodes.nodeConnections, parentDOM);
-  new ResizeObserver(function redrawConnections() {
-    svg.innerHTML = "";
-    renderConnections(nodes.nodeConnections, parentDOM);
-  }).observe(parentDOM);
-  */
 }
 
 function renderConnections(
