@@ -17,13 +17,15 @@
         <button id="btnList">List</button>
       </nav>
     </header>
-    <div id="editor-container" style="display: none">
-      <div class="editor" contenteditable="true" id="editTextArea">Hello</div>
-      <div class="error" id="error-message"></div>
-      <button id="btnUpdate">Update</button>
-    </div>
-    <div id="tree-container" style="display: grid"></div>
-    <div id="list-container" style="display: none"></div>
+    <main>
+      <div id="editor-container" style="display: none">
+        <div class="editor" contenteditable="true" id="editTextArea">Hello</div>
+        <div class="error" id="error-message"></div>
+        <button id="btnUpdate">Update</button>
+      </div>
+      <div id="tree-container" style="display: grid"></div>
+      <div id="list-container" style="display: none"></div>
+    </main>
     <script type="module">
       import { nodeToText, updateList, updateTree } from "/src/nodes.ts";
       import { ParseVDT, sampleTreeComplex } from "/src/parser.ts";
@@ -43,16 +45,25 @@
         editContainer.style.display = "block";
         treeContainer.style.display = "none";
         listContainer.style.display = "none";
+        btnEdit.classList.add("selected");
+        btnTree.classList.remove("selected");
+        btnList.classList.remove("selected");
       }
       function showTree() {
         editContainer.style.display = "none";
         treeContainer.style.display = "grid";
         listContainer.style.display = "none";
+        btnEdit.classList.remove("selected");
+        btnTree.classList.add("selected");
+        btnList.classList.remove("selected");
       }
       function showList() {
         editContainer.style.display = "none";
         treeContainer.style.display = "none";
         listContainer.style.display = "grid";
+        btnEdit.classList.remove("selected");
+        btnTree.classList.remove("selected");
+        btnList.classList.add("selected");
       }
       function parseTree() {
         try {
