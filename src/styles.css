@@ -240,7 +240,7 @@ nav {
   display: flex;
   height: 3rem;
 }
-nav button {
+button {
   background-color: var(--primary-color);
   border: 1px solid var(--background-color); /* Green border */
   border-bottom-width: 0px;
@@ -264,7 +264,7 @@ nav:after {
 }
 
 /* Add a background color on hover */
-nav button:hover {
+button:hover {
   background-color: var(--secondary-hover);
 }
 
@@ -276,16 +276,20 @@ button.selected {
   /* height: 3rem; */
 }
 
-main {
+main.bordered {
   /* background-color: #000; */
   border-style: solid;
   border-width: 1px;
   border-color: var(--border-color);
 }
 
+#editor-container {
+  padding: 2rem;
+}
+
 .editor {
-  margin: 2rem;
   background-color: #fff;
+  margin-bottom: 1rem;
   padding: 0.5rem;
   width: 80%;
   font-size: 1rem;
@@ -293,7 +297,7 @@ main {
 }
 
 .error {
-  margin: 2rem;
+  margin-bottom: 1rem;
   width: 80%;
   font-size: 1rem;
   color: red;

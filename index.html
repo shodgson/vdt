@@ -9,11 +9,11 @@
     <title>Value driver tree demo</title>
   </head>
   <body>
-    <header>
+    <header style="display: none">
       <h1>Value driver tree demo</h1>
       <nav>
         <button id="btnEdit">Edit</button>
-        <button id="btnTree">Tree</button>
+        <button id="btnTree" class="selected">Tree</button>
         <button id="btnList">List</button>
       </nav>
     </header>
@@ -28,7 +28,7 @@
     </main>
     <script type="module">
       import { nodeToText, updateList, updateTree } from "/src/nodes.ts";
-      import { ParseVDT, sampleTreeComplex } from "/src/parser.ts";
+      import { ParseVDT } from "/src/parser.ts";
       const editContainer = document.getElementById("editor-container");
       const treeContainer = document.getElementById("tree-container");
       const listContainer = document.getElementById("list-container");
@@ -38,8 +38,35 @@
       const btnList = document.getElementById("btnList");
       const btnUpdate = document.getElementById("btnUpdate");
       const errorMessage = document.getElementById("error-message");
-      const parsed = ParseVDT(sampleTreeComplex);
-      editTextArea.innerText = nodeToText(parsed);
+
+      // Setup with query parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const view = urlParams.get("v");
+      const password = urlParams.get("p");
+      console.log(view);
+      console.log(window.location.search);
+      switch (view) {
+        case "tree":
+          break;
+        case "list":
+          showList();
+          break;
+        default:
+          document.querySelector("header").style.display = "block";
+          document.querySelector("main").classList.add("bordered");
+          break;
+      }
+
+      let parsed = "";
+      let treeEq = `Sales = Volume * Price\nVolume = [100]\nPrice = [3.50]`;
+      try {
+        parsed = ParseVDT(`<%= tree_text %>`);
+        treeEq = nodeToText(parsed);
+        editTextArea.innerText = treeEq;
+      } catch (error) {
+        console.error(error);
+        editTextArea.innerText = treeEq;
+      }
 
       function showEditor() {
         editContainer.style.display = "block";
@@ -70,6 +97,7 @@
           const newTree = ParseVDT(editTextArea.innerText);
           updateTree(newTree, treeContainer);
           updateList(newTree, listContainer);
+          errorMessage.innerHTML = "";
         } catch (error) {
           errorMessage.innerHTML = error;
         }
@@ -78,8 +106,19 @@
       btnTree.addEventListener("click", showTree);
       btnList.addEventListener("click", showList);
       btnUpdate.addEventListener("click", parseTree);
-      updateTree(parsed, treeContainer);
-      updateList(parsed, listContainer);
+      parseTree();
+      try {
+        const initialTree = ParseVDT(treeEq);
+        updateTree(initialTree, treeContainer);
+        updateList(initialTree, listContainer);
+        errorMessage.innerHTML = "";
+      } catch (error) {
+        console.error(error);
+        errorMessage.innerHTML = error;
+      }
+
+      //updateTree(parsed, treeContainer);
+      //updateList(parsed, listContainer);
     </script>
   </body>
 </html>
