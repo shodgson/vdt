@@ -11,6 +11,7 @@ export function ParseVDT(input: string) {
 
   // Split the input string into individual lines
   const lines = input.split("\n");
+  console.log(lines);
 
   type TempNode = {
     nodeName: string;
@@ -51,7 +52,18 @@ export function ParseVDT(input: string) {
       continue;
     }
 
-    if (hasOperator(parts[1])) {
+    if (value.trim().startsWith("[") && value.trim().endsWith("]")) {
+      // Input
+      //const regex = /[+-]?\d+(\.|\,\d+)?/g;
+      const regex = /([+-]?\d+(?:[.,]\d+)?)/g;
+      const matches = value.match(regex);
+      console.log(matches);
+      if (matches !== null) {
+        nodes.push(
+          new InputNode(name, "", "", ...matches.map((m) => parseFloat(m)))
+        );
+      }
+    } else if (hasOperator(parts[1])) {
       // Calculation Node
       //console.log("calc");
       const substrings = value.split(
@@ -91,15 +103,6 @@ export function ParseVDT(input: string) {
 
       // Check for input context
       if (value.trim().startsWith("[") && value.trim().endsWith("]")) {
-        // Input
-        const regex = /[+-]?\d+(\.|\,\d+)?/g;
-        const matches = value.match(regex);
-        console.log("input value detected");
-        if (matches !== null) {
-          nodes.push(
-            new InputNode(name, "", "", ...matches.map((m) => parseFloat(m)))
-          );
-        }
       } else if (isNaN(Number(value))) {
         // Actually, could be a x = y; y = 1 + 2 situation
         calcNodes.push({
