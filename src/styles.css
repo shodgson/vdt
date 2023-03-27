@@ -283,16 +283,13 @@ main.bordered {
   border-color: var(--border-color);
 }
 
-#editor-container {
-  padding: 2rem;
-}
-
 .editor {
-  background-color: #fff;
+  background-color: black;
+  color: white;
+  margin-top: 1rem;
   margin-bottom: 1rem;
   padding: 0.5rem;
-  width: 80%;
-  font-size: 1rem;
+  font-size: 0.8rem;
   font-family: "Courier New", Courier, monospace;
 }
 
@@ -301,6 +298,10 @@ main.bordered {
   width: 80%;
   font-size: 1rem;
   color: red;
+}
+
+#notification {
+  margin-top: 1rem;
 }
 
 .node-line-input {

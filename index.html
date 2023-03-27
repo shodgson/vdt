@@ -6,45 +6,52 @@
       name="viewport"
       content="width=device-width, height=device-height, initial-scale=1.0, minimum-scale=1.0"
     />
-    <title>Value driver tree demo</title>
+    <title>Driver trees</title>
   </head>
   <body>
     <header style="display: none">
-      <h1>Value driver tree demo</h1>
+      <h2>Driver tree</h2>
       <nav>
-        <button id="btnEdit">Edit</button>
         <button id="btnTree" class="selected">Tree</button>
         <button id="btnList">List</button>
       </nav>
     </header>
     <main>
-      <div id="editor-container" style="display: none">
-        <div class="editor" contenteditable="true" id="editTextArea">Hello</div>
-        <div class="error" id="error-message"></div>
-        <button id="btnUpdate">Update</button>
-      </div>
       <div id="tree-container" style="display: grid"></div>
       <div id="list-container" style="display: none"></div>
     </main>
+    <div class="editor" contenteditable="true" id="editTextArea">
+      Sales = Volume * Price <br />
+      Volume = [100] <br />
+      Price = [3.50]
+    </div>
+    <div>
+      <input type="text" placeholder="Title" />
+    </div>
+    <div>
+      <input type="text" placeholder="Description" />
+    </div>
+    <div class="error" id="error-message"></div>
+    <button id="btnSave">Save</button>
+    <div id="notification"></div>
     <script type="module">
       import { nodeToText, updateList, updateTree } from "/src/nodes.ts";
       import { ParseVDT } from "/src/parser.ts";
-      const editContainer = document.getElementById("editor-container");
       const treeContainer = document.getElementById("tree-container");
       const listContainer = document.getElementById("list-container");
       const editTextArea = document.getElementById("editTextArea");
-      const btnEdit = document.getElementById("btnEdit");
       const btnTree = document.getElementById("btnTree");
       const btnList = document.getElementById("btnList");
-      const btnUpdate = document.getElementById("btnUpdate");
+      const btnSave = document.getElementById("btnSave");
       const errorMessage = document.getElementById("error-message");
+      const notification = document.getElementById("notification");
 
       // Setup with query parameters
       const urlParams = new URLSearchParams(window.location.search);
+      let uuid = window.location.pathname.substring(1);
       const view = urlParams.get("v");
-      const password = urlParams.get("p");
-      console.log(view);
-      console.log(window.location.search);
+      let password = urlParams.get("p");
+      const apiURL = import.meta.env.VITE_VDT_API_URL;
       switch (view) {
         case "tree":
           break;
@@ -57,68 +64,120 @@
           break;
       }
 
-      let parsed = "";
       let treeEq = `Sales = Volume * Price\nVolume = [100]\nPrice = [3.50]`;
-      try {
-        parsed = ParseVDT(`<%= tree_text %>`);
-        treeEq = nodeToText(parsed);
-        editTextArea.innerText = treeEq;
-      } catch (error) {
-        console.error(error);
-        editTextArea.innerText = treeEq;
-      }
+      ParseVDT(`<%= tree_text %>`)
+        .then((parsed) => {
+          treeEq = nodeToText(parsed);
+          editTextArea.innerText = treeEq;
+        })
+        .catch((error) => {
+          console.error(error);
+          editTextArea.innerText = treeEq;
+        });
 
-      function showEditor() {
-        editContainer.style.display = "block";
-        treeContainer.style.display = "none";
-        listContainer.style.display = "none";
-        btnEdit.classList.add("selected");
-        btnTree.classList.remove("selected");
-        btnList.classList.remove("selected");
-      }
       function showTree() {
-        editContainer.style.display = "none";
         treeContainer.style.display = "grid";
         listContainer.style.display = "none";
-        btnEdit.classList.remove("selected");
         btnTree.classList.add("selected");
         btnList.classList.remove("selected");
       }
       function showList() {
-        editContainer.style.display = "none";
         treeContainer.style.display = "none";
         listContainer.style.display = "grid";
-        btnEdit.classList.remove("selected");
         btnTree.classList.remove("selected");
         btnList.classList.add("selected");
       }
       function parseTree() {
+        console.log(editTextArea.innerText);
+        ParseVDT(editTextArea.innerText)
+          .then((newTree) => {
+            updateTree(newTree, treeContainer);
+            updateList(newTree, listContainer);
+            errorMessage.innerHTML = "";
+            notification.innerHTML = "Tree updated successfully";
+          })
+          .catch((error) => {
+            errorMessage.innerHTML = "!!" + error;
+            notification.innerHTML = "";
+          });
+      }
+      function saveTree() {
+        errorMessage.innerHTML = "";
+        notification.innerHTML = "";
         try {
+          // Check tree is valid
           const newTree = ParseVDT(editTextArea.innerText);
-          updateTree(newTree, treeContainer);
-          updateList(newTree, listContainer);
-          errorMessage.innerHTML = "";
+
+          let url = apiURL;
+          let method = "POST";
+          if (uuid == "" || uuid == "new") {
+            url += "new";
+          } else {
+            url += uuid;
+            method = "PUT";
+          }
+          const data = {
+            password,
+            tree_text: editTextArea.innerText,
+          };
+          const options = {
+            method,
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(data),
+          };
+
+          fetch(url, options)
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.error) {
+                errorMessage.innerText = data.error;
+              }
+              if (data.uuid) {
+                uuid = data.uuid;
+                password = data.password;
+                const link = `${import.meta.env.VITE_VDT_TREE_URL}${uuid}`;
+                notification.innerHTML = `<p>New tree created</p>
+                <p>Share tree: <a href="${link}?v=tree">${link}?v=tree</a></p>
+                <p>Edit: <a href="${link}?p=${password}">${link}?p=${password}</a></p>
+                  `;
+                window.history.replaceState(
+                  null,
+                  "Driver tree",
+                  `${uuid}?p=${password}`
+                );
+              }
+            })
+            .catch((error) => console.error(error));
         } catch (error) {
           errorMessage.innerHTML = error;
         }
       }
-      btnEdit.addEventListener("click", showEditor);
       btnTree.addEventListener("click", showTree);
       btnList.addEventListener("click", showList);
-      btnUpdate.addEventListener("click", parseTree);
+      if (btnSave) btnSave.addEventListener("click", saveTree);
       parseTree();
-      try {
-        const initialTree = ParseVDT(treeEq);
-        updateTree(initialTree, treeContainer);
-        updateList(initialTree, listContainer);
-        errorMessage.innerHTML = "";
-      } catch (error) {
-        console.error(error);
-        errorMessage.innerHTML = error;
-      }
+      let timeoutId;
+      editTextArea.addEventListener("input", (event) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          // your function to execute after debouncing
+          ParseVDT(editTextArea.innerText)
+            .then((newTree) => {
+              updateTree(newTree, treeContainer);
+              updateList(newTree, listContainer);
+              errorMessage.innerHTML = "";
+              notification.innerHTML = "Tree updated successfully";
+            })
+            .catch((error) => {
+              errorMessage.innerHTML = error;
+              notification.innerHTML = "";
+            });
 
-      //updateTree(parsed, treeContainer);
-      //updateList(parsed, listContainer);
+          console.log("Debounced function called");
+        }, 750); // Debounce by 750ms
+      });
     </script>
   </body>
 </html>

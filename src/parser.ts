@@ -1,192 +1,164 @@
-import {
-  allowableOperators,
-  CalculationNode,
-  InputNode,
-  StaticNode,
-  VDTNode,
-} from "./nodes";
+import { CalculationNode, InputNode, StaticNode, VDTNode } from "./nodes";
+import { allowableOperators } from "./operators";
+
+type TempNode = {
+  nodeName: string;
+  children: string[];
+  operators: string[];
+  unit: string;
+};
+function hasOperator(text: string) {
+  return allowableOperators.some((o) => text.includes(o));
+}
 
 export function ParseVDT(input: string) {
-  // "Big value = C * D\nX = A - B + Big value\nA = 3\nB = 2\nC=4\nD=5";
+  return new Promise((resolve, reject) => {
+    // "Big value = C * D\nX = A - B + Big value\nA = 3\nB = 2\nC=4\nD=5";
 
-  // Split the input string into individual lines
-  const lines = input.split("\n");
-  console.log(lines);
+    // Split the input string into individual lines
+    const lines = input.split("\n");
 
-  type TempNode = {
-    nodeName: string;
-    children: string[];
-    operators: string[];
-    unit: string;
-  };
+    const calcNodes: TempNode[] = [];
+    const nodes: VDTNode[] = [];
+    const units: { nodeName: string; unit: string }[] = [];
 
-  const calcNodes: TempNode[] = [];
-  const nodes: VDTNode[] = [];
-  const units: { nodeName: string; unit: string }[] = [];
+    // Loop over each line of the input
+    for (const line of lines) {
+      // Split the line into its constituent parts
+      if (line.trim().length == 0) continue;
 
-  //   console.log(allowableOperators);
-  function hasOperator(text: string) {
-    return allowableOperators.some((o) => text.includes(o));
-  }
+      const parts = line.split(/ *= */);
 
-  // Loop over each line of the input
-  for (const line of lines) {
-    // Split the line into its constituent parts
-    if (line.trim().length == 0) continue;
-
-    const parts = line.split(/ *= */);
-
-    if (parts.length != 2) {
-      throw new Error("Each line have one and only one equals sign (=)");
-    }
-
-    const name = parts[0];
-    const value = parts[1];
-
-    // Check for units
-    if (name.trim().startsWith("[") && name.trim().endsWith("]")) {
-      units.push({
-        nodeName: name.trim().slice(1, -1),
-        unit: value,
-      });
-      continue;
-    }
-
-    if (value.trim().startsWith("[") && value.trim().endsWith("]")) {
-      // Input
-      //const regex = /[+-]?\d+(\.|\,\d+)?/g;
-      const regex = /([+-]?\d+(?:[.,]\d+)?)/g;
-      const matches = value.match(regex);
-      console.log(matches);
-      if (matches !== null) {
-        nodes.push(
-          new InputNode(name, "", "", ...matches.map((m) => parseFloat(m)))
-        );
+      if (parts.length != 2) {
+        throw new Error("Each line have one and only one equals sign (=)");
       }
-    } else if (hasOperator(parts[1])) {
-      // Calculation Node
-      //console.log("calc");
-      const substrings = value.split(
-        new RegExp(
-          `\\s*(${allowableOperators
-            .map((operator) => `\\${operator}`)
-            .join("|")})\\s*`
-        )
-      );
-      let tempCalcNode: TempNode = {
-        nodeName: name,
-        children: [],
-        operators: [],
-        unit: "",
-      };
-      for (let i = 0; i < substrings.length; i++) {
-        const element = substrings[i].trim();
-        if (i % 2 == 0) {
-          // new node
-          if (hasOperator(element)) {
-            throw new Error(`${element} should not contain any operators`);
-          }
-          tempCalcNode.children.push(element);
-        } else {
-          // operator
-          if (!hasOperator(element)) {
-            throw new Error(`${element} is not a valid operator`);
-          }
-          tempCalcNode.operators.push(element);
-        }
-      }
-      calcNodes.push(tempCalcNode);
-    } else {
-      // Leaf Node
-      //   console.log("input");
-      // Check the string to the right is a number
 
-      // Check for input context
+      const name = parts[0];
+      const value = parts[1];
+
+      // Check for units
+      if (name.trim().startsWith("[") && name.trim().endsWith("]")) {
+        units.push({
+          nodeName: name.trim().slice(1, -1),
+          unit: value,
+        });
+        continue;
+      }
+
       if (value.trim().startsWith("[") && value.trim().endsWith("]")) {
-      } else if (isNaN(Number(value))) {
-        // Actually, could be a x = y; y = 1 + 2 situation
-        calcNodes.push({
+        // Input
+        //const regex = /[+-]?\d+(\.|\,\d+)?/g;
+        const regex = /([+-]?\d+(?:[.,]\d+)?)/g;
+        const matches = value.match(regex);
+        console.log(matches);
+        if (matches !== null) {
+          nodes.push(
+            new InputNode(name, "", "", ...matches.map((m) => parseFloat(m)))
+          );
+        }
+      } else if (hasOperator(parts[1])) {
+        // Calculation Node
+        //console.log("calc");
+        const substrings = value.split(
+          new RegExp(
+            `\\s*(${allowableOperators
+              .map((operator) => `\\${operator}`)
+              .join("|")})\\s*`
+          )
+        );
+        let tempCalcNode: TempNode = {
           nodeName: name,
-          children: [value],
+          children: [],
           operators: [],
           unit: "",
-        });
-        //throw new Error(`${value} is not a valid value for ${name}`);
+        };
+        for (let i = 0; i < substrings.length; i++) {
+          const element = substrings[i].trim();
+          if (i % 2 == 0) {
+            // new node
+            if (hasOperator(element)) {
+              throw new Error(`${element} should not contain any operators`);
+            }
+            tempCalcNode.children.push(element);
+          } else {
+            // operator
+            if (!hasOperator(element)) {
+              throw new Error(`${element} is not a valid operator`);
+            }
+            tempCalcNode.operators.push(element);
+          }
+        }
+        calcNodes.push(tempCalcNode);
       } else {
-        nodes.push(new StaticNode(name, "", "", Number(value)));
-      }
-      //nodes.push(new InputNode(name, "", "operator", ))
-    }
-  }
-
-  //console.debug("CALCS", calcNodes);
-  //console.debug("INPUTS", nodes);
-
-  // Add units
-  for (let i = 0; i < calcNodes.length; i++) {
-    for (let j = 0; j < units.length; j++) {
-      if (units[j].nodeName == calcNodes[i].nodeName) {
-        calcNodes[i].unit = units[j].unit;
-      }
-    }
-  }
-  for (let i = 0; i < nodes.length; i++) {
-    for (let j = 0; j < units.length; j++) {
-      if (nodes[i].name == units[j].nodeName) {
-        nodes[i].unit = units[j].unit;
+        // Check for input context
+        if (value.trim().startsWith("[") && value.trim().endsWith("]")) {
+        } else if (isNaN(Number(value))) {
+          // could be a x = y; y = 1 + 2 situation
+          calcNodes.push({
+            nodeName: name,
+            children: [value],
+            operators: [],
+            unit: "",
+          });
+        } else {
+          nodes.push(new StaticNode(name, "", "", Number(value)));
+        }
       }
     }
-  }
 
-  let topNode: CalculationNode | undefined;
-  // Create structure
+    // Add units
+    addUnits(calcNodes, units, nodes);
 
-  function addChildren(
-    parentNode: CalculationNode,
-    node: TempNode,
-    calcNodes: TempNode[]
-  ) {
-    // Find referenced node in either nodes or inside tree already
-    for (let j = 0; j < node.children.length; j++) {
-      const childName = node.children[j];
-      const childLeafNodes = nodes.filter((cn) => cn.name == childName);
-      const childCalcNodes = calcNodes.filter((cn) => cn.nodeName == childName);
-      //console.log("Child node of", n.nodeName, childName, childNodes);
-      if (childLeafNodes.length + childCalcNodes.length != 1) {
-        throw new Error(
-          `${
-            childLeafNodes.length + childCalcNodes.length
-          } instances of ${childName} defined`
+    let topNode: CalculationNode | undefined;
+    // Create structure
+
+    function addChildren(
+      parentNode: CalculationNode,
+      node: TempNode,
+      calcNodes: TempNode[]
+    ) {
+      // Find referenced node in either nodes or inside tree already
+      for (let j = 0; j < node.children.length; j++) {
+        const childName = node.children[j];
+        const childLeafNodes = nodes.filter((cn) => cn.name == childName);
+        const childCalcNodes = calcNodes.filter(
+          (cn) => cn.nodeName == childName
         );
+        //console.log("Child node of", n.nodeName, childName, childNodes);
+        if (childLeafNodes.length + childCalcNodes.length == 0) {
+          throw new Error(`${childName} not defined`);
+        }
+        if (childLeafNodes.length + childCalcNodes.length > 1) {
+          throw new Error(`${childName} defined more than once`);
+        }
+        const childOperator = j == 0 ? "" : node.operators[j - 1];
+        if (childLeafNodes.length == 1) {
+          childLeafNodes[0].operator = childOperator;
+          parentNode.addChild(childLeafNodes[0]);
+        } else {
+          const childCalc = childCalcNodes[0];
+          const childNode = new CalculationNode(
+            childCalc.nodeName,
+            childCalc.unit,
+            childOperator
+          );
+          addChildren(childNode, childCalc, calcNodes);
+          parentNode.addChild(childNode);
+        }
       }
-      const childOperator = j == 0 ? "" : node.operators[j - 1];
-      if (childLeafNodes.length == 1) {
-        childLeafNodes[0].operator = childOperator;
-        parentNode.addChild(childLeafNodes[0]);
+    }
+
+    // TODO: use tempNodes to create multiple trees and push them together
+    //const tempNodes = [];
+    for (let i = 0; i < calcNodes.length; i++) {
+      const n = calcNodes[i];
+      if (i == 0) {
+        topNode = new CalculationNode(n.nodeName, n.unit);
+        addChildren(topNode, n, calcNodes);
+        //topNode.addChild()
       } else {
-        const childCalc = childCalcNodes[0];
-        const childNode = new CalculationNode(
-          childCalc.nodeName,
-          childCalc.unit,
-          childOperator
-        );
-        addChildren(childNode, childCalc, calcNodes);
-        parentNode.addChild(childNode);
-      }
-    }
-  }
-
-  // TODO: use tempNodes to create multiple trees and push them together
-  //const tempNodes = [];
-  for (let i = 0; i < calcNodes.length; i++) {
-    const n = calcNodes[i];
-    if (i == 0) {
-      topNode = new CalculationNode(n.nodeName, n.unit);
-      addChildren(topNode, n, calcNodes);
-      //topNode.addChild()
-    } else {
-      // check if already in calculation tree
-      /*
+        // check if already in calculation tree
+        /*
       if (topNode && !topNode.contains(n.nodeName)) {
         console.log(n.nodeName, "not contained");
         // If not, this is new topNode
@@ -195,13 +167,14 @@ export function ParseVDT(input: string) {
         addChildren(topNode, n, calcNodes);
       }
       */
+      }
     }
-  }
 
-  // Log the resulting objects to the console
-  //console.log(nodes);
-  //console.log(topNode);
-  return topNode;
+    // Log the resulting objects to the console
+    //console.log(nodes);
+    //console.log(topNode);
+    resolve(topNode);
+  });
 }
 
 export const sampleTreeComplex = `
@@ -249,6 +222,26 @@ Salary per employee = [2500]
 [Salary per employee] = USD
 `;
 
+function addUnits(
+  calcNodes: TempNode[],
+  units: { nodeName: string; unit: string }[],
+  nodes: VDTNode[]
+) {
+  for (let i = 0; i < calcNodes.length; i++) {
+    for (let j = 0; j < units.length; j++) {
+      if (units[j].nodeName == calcNodes[i].nodeName) {
+        calcNodes[i].unit = units[j].unit;
+      }
+    }
+  }
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = 0; j < units.length; j++) {
+      if (nodes[i].name == units[j].nodeName) {
+        nodes[i].unit = units[j].unit;
+      }
+    }
+  }
+}
 /*const input =
     //    "X = A - B + Big value\nA = 3\nB = 2\nBig value = C * D\nC=4\nD=5";
     `
